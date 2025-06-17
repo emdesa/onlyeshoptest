@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 const bucket = "landmark-bucket";
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const key = process.env.NEXT_PUBLIC_SUPABASE_KEY as string;
+const url = process.env.SUPABASE_URL as string;
+const key = process.env.SUPABASE_KEY as string;
 
 // Create Supabase client
 const supabase = createClient(url, key);
@@ -17,27 +17,22 @@ export async function uploadFile(image: File) {
     .upload(newName, image, {
       cacheControl: "3600",
     });
+  if (!data) throw new Error("image upload failed!!");
 
-  if (error) {
-    throw new Error(`Image upload failed: ${error.message}`);
-  }
-  if (!data) {
-    throw new Error("Image upload failed: no data returned");
-  }
+  //   const { data } = supabase.storage.from('bucket').getPublicUrl('filePath.jpg')
 
-  const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(newName);
-  return publicUrlData.publicUrl;
+  // console.log(data.publicUrl)
+  return supabase.storage.from(bucket).getPublicUrl(newName).data.publicUrl;
 }
 
-// Delete file from storage
+//delete
 export async function deleteFileFromStorage(fullUrl: string) {
   const filePath = fullUrl.replace(
     `${url}/storage/v1/object/public/${bucket}/`,
     ""
   );
-
   if (!filePath) throw new Error("Invalid file path");
 
   const { error } = await supabase.storage.from(bucket).remove([filePath]);
-  if (error) throw new Error(`Failed to delete image: ${error.message}`);
+  if (error) throw new Error("Failed to delete image from storage");
 }
